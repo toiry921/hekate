@@ -1242,7 +1242,7 @@ void launch_firmware()
 				menu_t menu = {
 					ments, "Launch configurations", 0, 0
 				};
-				cfg_sec = get_bootentry((ini_sec_t *)tui_do_menu(&gfx_con, &menu));
+				cfg_sec = ini_clone_section((ini_sec_t *)tui_do_menu(&gfx_con, &menu));
 				if (!cfg_sec)
 				{
 					free(ments);
@@ -1268,7 +1268,7 @@ void launch_firmware()
 	if (!hos_launch(cfg_sec))
 		EPRINTF("Failed to launch firmware.");
 
-	bootentry_free(cfg_sec);
+	ini_free_section(cfg_sec);
 
 	btn_wait();
 }
