@@ -106,3 +106,36 @@ void ini_free(link_t *dst)
 		free(ini_sec);
 	}
 }
+
+ini_sec_t *get_bootentry(ini_sec_t *cfg)
+{
+	if (cfg == NULL)
+		return NULL;
+
+	ini_sec_t *csec = (ini_sec_t *)malloc(sizeof(ini_sec_t));
+	list_init(&csec->kvs);
+
+	LIST_FOREACH_ENTRY(ini_kv_t, kv, &cfg->kvs, link)
+	{
+		ini_kv_t *kvcfg = (ini_kv_t *)malloc(sizeof(ini_kv_t));
+		kvcfg->key = _strdup(kv->key);
+		kvcfg->val = _strdup(kv->val);
+		list_append(&csec->kvs, &kvcfg->link);
+	}
+
+	return csec;
+}
+
+void bootentry_free(ini_sec_t *cfg)
+{
+	if (cfg == NULL)
+		return;
+
+	LIST_FOREACH_ENTRY(ini_kv_t, kv, &cfg->kvs, link)
+	{
+		free(kv->key);
+		free(kv->val);
+		free(kv);
+	}
+	free(cfg);
+}

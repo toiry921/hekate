@@ -36,5 +36,7 @@ typedef struct _ini_sec_t
 
 int ini_parse(link_t *dst, char *ini_path);
 void ini_free(link_t *dst);
+ini_sec_t *get_bootentry(ini_sec_t *cfg);
+void bootentry_free(ini_sec_t *cfg);
 
 #endif

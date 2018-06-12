@@ -131,7 +131,6 @@ void *calloc(u32 num, u32 size)
 
 void free(void *buf)
 {
-	if (buf == NULL)
-		return;
-	_heap_free(&_heap, (u32)buf);
+	if (buf != NULL)
+		_heap_free(&_heap, (u32)buf);
 }
