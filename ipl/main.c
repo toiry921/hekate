@@ -1212,6 +1212,9 @@ out:;
 
 void launch_firmware()
 {
+	u8 max_entries = 16;
+	int ini_parsed = 0;
+
 	ini_sec_t *cfg_sec = NULL;
 	LIST_INIT(ini_sections);
 
@@ -1223,7 +1226,7 @@ void launch_firmware()
 		if (ini_parse(&ini_sections, "hekate_ipl.ini"))
 		{
 			//Build configuration menu.
-			ment_t *ments = (ment_t *)malloc(sizeof(ment_t) * 16);
+			ment_t *ments = (ment_t *)malloc(sizeof(ment_t) * max_entries);
 			ments[0].type = MENT_BACK;
 			ments[0].caption = "Back";
 			u32 i = 1;
@@ -1235,6 +1238,9 @@ void launch_firmware()
 				ments[i].caption = ini_sec->name;
 				ments[i].data = ini_sec;
 				i++;
+
+				if (i > max_entries)
+					break;
 			}
 			if (i > 1)
 			{
@@ -1244,7 +1250,11 @@ void launch_firmware()
 				};
 				cfg_sec = (ini_sec_t *)tui_do_menu(&gfx_con, &menu);
 				if (!cfg_sec)
+				{
+					free(ments);
+					ini_free(&ini_sections);
 					return;
+				}
 			}
 			else
 				EPRINTF("No launch configurations found.");
@@ -1258,12 +1268,18 @@ void launch_firmware()
 	{
 		gfx_printf(&gfx_con, "\nUsing default launch configuration...\n");
 		sleep(3000000);
+		if (ini_parsed)
+		{
+			ini_free(&ini_sections);
+			ini_parsed = 0;
+		}
 	}
 
 	if (!hos_launch(cfg_sec))
 		EPRINTF("Failed to launch firmware.");
 
-	//TODO: free ini.
+	if (ini_parsed)
+		ini_free(&ini_sections);
 
 	btn_wait();
 }

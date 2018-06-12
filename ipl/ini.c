@@ -91,3 +91,18 @@ int ini_parse(link_t *dst, char *ini_path)
 
 	return 1;
 }
+
+void ini_free(link_t *dst)
+{
+	LIST_FOREACH_ENTRY(ini_sec_t, ini_sec, dst, link)
+	{
+		LIST_FOREACH_ENTRY(ini_kv_t, kv, &ini_sec->kvs, link)
+		{
+			free(kv->key);
+			free(kv->val);
+			free(kv);
+		}
+		free(ini_sec->name);
+		free(ini_sec);
+	}
+}
