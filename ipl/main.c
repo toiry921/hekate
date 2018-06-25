@@ -355,7 +355,7 @@ void print_fuseinfo()
 			if (sd_save_to_file((u8 *)0x7000F900, 0x2FC, fuseFilename))
 				EPRINTF("\nError creating fuse.bin file.");
 			else
-				gfx_puts(&gfx_con, "\nDone!\n");				
+				gfx_puts(&gfx_con, "\nDone!\n");
 		}
 
 		btn_wait();
@@ -1288,7 +1288,7 @@ void toggle_autorcm(){
 
 	u8 *tempbuf = (u8 *)malloc(0x200);
 	sdmmc_storage_set_mmc_partition(&storage, 1);
-	
+
 	int i, sect = 0;
 	for (i = 0; i < 4; i++)
 	{
@@ -1297,10 +1297,10 @@ void toggle_autorcm(){
 		tempbuf[0x10] ^= 0x77; // !IMPORTANT: DO NOT CHANGE! XOR by arbitrary number to corrupt
 		sdmmc_storage_write(&storage, sect, 1, tempbuf);
 	}
-	
+
 	free(tempbuf);
 	sdmmc_storage_end(&storage);
-	
+
 	gfx_printf(&gfx_con, "%kAutoRCM mode toggled!%k\n\nPress any key...\n", 0xFF00FF96, 0xFFCCCCCC);
 
 out:;
@@ -1352,7 +1352,7 @@ int fix_attributes(char *path, u32 *total)
 				res = fix_attributes(path, total);
 				if (res != FR_OK)
 					break;
-				
+
 			}
 			// Clear file or folder path.
 			path[i] = 0;
@@ -1379,6 +1379,40 @@ void fix_sd_attr(){
 		gfx_printf(&gfx_con, "\n%kTotal archive bits cleared: %d!%k\n\nDone! Press any key...", 0xFF00FF96, total, 0xFFCCCCCC);
 	}
 	btn_wait();
+}
+
+void battery_sync() {
+	// TODO: Add extra menu with instructions, See: AutoRCM
+	const int ki2cBus = 0;
+	const int slaveAddr = 0x6b;
+
+	i2c_init(ki2cBus);
+	uint8_t part_info;
+	i2c_recv_buf_small(&part_info, sizeof(part_info), ki2cBus, slaveAddr, 0x0a);
+	if (part_info != 0x2f) {
+		gfx_printf(&gfx_con, "ERROR: charger part number mismatch got: "
+		 "0x%02x want: 0x%02x\n\n   ", part_info, 0x2f);
+		 while(1);
+	 }
+	 // disable watchdog
+	 uint8_t reg5;
+	 i2c_recv_buf_small(&reg5, sizeof(reg5), ki2cBus, slaveAddr, 0x05);
+		reg5 &= ~((1 << 4 | 1 << 5));
+	 i2c_send_buf_small(ki2cBus, slaveAddr, 0x05, &reg5, sizeof(reg5));
+
+	 // disable BATFET
+	 uint8_t reg7;
+	 i2c_recv_buf_small(&reg7, sizeof(reg7), ki2cBus, slaveAddr, 0x05);
+	 reg7 |= (1 << 5);
+	 i2c_send_buf_small(ki2cBus, slaveAddr, 0x07, &reg7, sizeof(reg7));
+	 gfx_printf(&gfx_con, "\n BATFET is disabled, disconnect USB, hold power for 10 sec then plug in USB.\n\n");
+
+	 while(1);
+
+	 // Turn off maybe?
+	 power_off();
+
+
 }
 
 void about()
@@ -1469,6 +1503,7 @@ ment_t ment_tools[] = {
 	MDEF_CAPTION("------ Misc -------", 0xFFE6B90A),
 	MDEF_HANDLER("Dump package1", dump_package1),
 	MDEF_HANDLER("Fix SD files attributes", fix_sd_attr),
+	MDEF_HANDLER("Fix Battery desync", battery_sync),
 	MDEF_CHGLINE(),
 	MDEF_CAPTION("---- Dangerous ----", 0xFF0000FF),
 	MDEF_MENU("AutoRCM", &menu_autorcm),
